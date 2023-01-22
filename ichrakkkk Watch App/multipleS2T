@@ -1,0 +1,60 @@
+import spacy
+from dateutil import parser
+import re
+import whisper
+
+model = whisper.load_model("base")
+result = model.transcribe("sound.m4a")
+text = result["text"]
+
+# Load the spaCy model
+nlp = spacy.load("en_core_web_sm")
+
+#Define the text to process
+#text = "The team had a meeting on Monday at 2pm to discuss the project's progress. The subject of the meeting was the new design proposal. They will have another meeting on Wednesday at 10am to review the budget."
+with open("Meeting.txt", "w") as file:
+    file.write(text)
+# Process the text with spaCy
+doc = nlp(text)
+
+# Initialize an empty list to store the meeting information
+meetings = []
+
+# Iterate over each sentence
+for sent in doc.sents:
+    # Check for the presence of the word "meeting" in the sentence
+    if "meeting" in sent.text:
+        # Initialize variables to store the meeting information
+        meeting_date = ""
+        meeting_time = ""
+        meeting_subject = ""
+        # Iterate over the entities in the sentence
+        for ent in sent.ents:
+            if ent.label_ == "DATE":
+                meeting_date = ent.text
+            if ent.label_ == "TIME":
+                meeting_time = ent.text
+        # Extract the meeting time in 24 hour format
+        if meeting_time:
+            meeting_time = parser.parse(meeting_time).strftime("%H:%M")
+        else:
+            meeting_time = "Time Not Specified"
+
+        # Extract the meeting subject
+        subject = [token.text for token in sent if token.pos_ == "NOUN"]
+        meeting_subject = " ".join(subject)
+        # Append the meeting information to the list
+        meetings.append({"date": meeting_date, "time": meeting_time, "subject": meeting_subject})
+
+# Print the information for each meeting
+with open("MeetingList.txt","w") as file:
+    file.write("")
+for i, meeting in enumerate(meetings):
+    with open("MeetingList.txt", "a") as file:
+        file.write("Meeting "+str(i+1)+":\n")
+        if meeting['date']  == "":
+            file.write("Date: "+str(meeting['date'])+'\n')
+
+        file.write("Date: "+str(meeting['date'])+'\n')
+        file.write("Time: "+str(meeting['time'])+'\n')
+        file.write("Subject: "+str(meeting['subject'])+'\n')
